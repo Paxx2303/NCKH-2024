@@ -76,6 +76,10 @@ class cvGUI:  # https://tkdocs.com/index.html
         self.camIMG.imgtk = imgtk
         self.camIMG.configure(image=imgtk)
 
+    def IMGxy(self, e):  # update x,y if click in image
+        cvGUI.imgClick = (e.x, e.y)
+        cvColorTracker.newClick = True
+
     def displayNP(self, npframe):
         frameRGBA = cv2.cvtColor(npframe, cv2.COLOR_BGR2RGBA)
         npimg = Image.fromarray(frameRGBA)
