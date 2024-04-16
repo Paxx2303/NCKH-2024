@@ -43,13 +43,7 @@ class cvGUI:  # https://tkdocs.com/index.html
         controlFrame = ttk.Frame(guiFrame, padding=10)
         controlFrame.grid(column=0, row=0)
         # set control
-        self.bMesh = BooleanVar()
-        cb3 = ttk.Checkbutton(controlFrame, text='Mesh', variable=self.bMesh)
-        cb3.grid(column=4, row=0, padx=10)
 
-        buttonQuit = ttk.Button(controlFrame, text="Quit", command=self.quitGUI)
-        buttonQuit.grid(column=5, row=0)
-        self.root.bind('q', self.quitGUI)
         # set video frame below controls
         imageFrame = ttk.Frame(guiFrame)
         imageFrame.grid(column=0, row=1)
@@ -78,8 +72,6 @@ class cvGUI:  # https://tkdocs.com/index.html
 
     def IMGxy(self, e):  # update x,y if click in image
         cvGUI.imgClick = (e.x, e.y)
-        cvColorTracker.newClick = True
-
     def displayNP(self, npframe):
         frameRGBA = cv2.cvtColor(npframe, cv2.COLOR_BGR2RGBA)
         npimg = Image.fromarray(frameRGBA)

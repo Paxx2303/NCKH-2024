@@ -1,27 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
-import PIL
-import cvhelpers as cvHelp
-import mediapipe as mp
 import cv2
-
-
-def camStart(self):
-    self.cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, self.w)
-    self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, self.h)
-    self.cam.set(cv2.CAP_PROP_FPS, 30)
-
-
-def displayImg(self, frame):
-    frameRGBA = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-    img = Image.fromarray(frameRGBA)
-    imgtk = ImageTk.PhotoImage(image=img)
-    self.camIMG.imgtk = imgtk
-    self.camIMG.configure(image=imgtk)
-
-
+import numpy as np
+from GUI import cvhelpers as cvHelp
+import mediapipe as mp
 def get_mediapipe_app(
         max_num_faces=1,
         refine_landmarks=True,
@@ -37,159 +20,77 @@ def get_mediapipe_app(
     )
 
     return face_mesh
-class Page1(ttk.Frame):
+fps = cvHelp.TrackFPS(0.5)
+class MainPage(ttk.Frame):
     def __init__(self, parent, controller, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-
         self.controller = controller
 
-        # Chèn ảnh background cho trang 1
-        image = Image.open(r"page1.png")  # Đường dẫn đến tệp ảnh của bạn
-        image = image.resize((320, 570), PIL.Image.Resampling.LANCZOS)
-        photo = ImageTk.PhotoImage(image)
-        background_label = ttk.Label(self, image=photo)
-        background_label.image = photo
+        # Background image
+        self.background_image = Image.open("page1.png")
+        self.background_image = self.background_image.resize((320, 570))
+        self.background_photo = ImageTk.PhotoImage(self.background_image)
+        background_label = ttk.Label(self, image=self.background_photo)
+        background_label.image = self.background_photo
         background_label.place(relwidth=1, relheight=1)
-        next_button = ttk.Button(self, text="Start", command=self.go_to_page2)
-        next_button.pack(side="bottom")
 
-    def go_to_page2(self):
+        # Start button
+        start_button = ttk.Button(self, text="Start", command=self.start_application)
+        start_button.place(relx=0.5, rely=0.9, anchor="center")
+
+    def start_application(self):
         self.controller.show_frame(Page2)
-
 
 class Page2(ttk.Frame):
     def __init__(self, parent, controller, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-
         self.controller = controller
 
-        # Chèn ảnh background cho trang 2
-        image = Image.open(r"page2.png")  # Đường dẫn đến tệp ảnh của bạn
-        image = image.resize((320, 570), PIL.Image.Resampling.LANCZOS)
-        photo = ImageTk.PhotoImage(image)
-        background_label = ttk.Label(self, image=photo)
-        background_label.image = photo
-        background_label.place(relwidth=1, relheight=1)
+        # Your code for Page2
+        self.cv_frame = ttk.Frame(self)  # Create a frame to hold the OpenCV window
+        self.cv_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        image1 = Image.open(r"setting.png")
-        image1 = image1.resize((30, 30), PIL.Image.Resampling.LANCZOS)
-        photo1 = ImageTk.PhotoImage(image1)
-
-        next_button = ttk.Button(self, image=photo1, command=self.go_to_page3)
-        next_button.image = photo1
-        next_button.place(relx=0.95, rely=0.03, anchor="ne")
-
-        image2 = Image.open(r"sound.png")
-        image2 = image2.resize((33, 28), PIL.Image.Resampling.LANCZOS)
-        photo2 = ImageTk.PhotoImage(image2)
-
-        next_button2 = ttk.Button(self, image=photo2)
-        next_button2.image = photo2
-        next_button2.place(relx=0.2, rely=0.033, anchor="ne")
-
+        # Back button
         back_button = ttk.Button(self, text="Back", command=self.go_to_page1)
-        back_button.pack(side="bottom")
+        back_button.place(relx=0.45, rely=0)
 
-        fps = cvHelp.TrackFPS(.05)
-        gui = camStart()
-
-        ignore, cv_frame = gui.cam.read()
-        chosen_left_eye_idxs = [362, 385, 387, 263, 373, 380]
-        chosen_right_eye_idxs = [33, 160, 158, 133, 153, 144]
-        mouth_idxs = [191, 82, 312, 310, 13, 81, 95, 87, 317, 318, 14, 178]
-        face = mp.solutions.face_mesh.FaceMesh()
-        face = get_mediapipe_app()
-        imgRGB = cv2.cvtColor(cv_frame, cv2.COLOR_BGR2RGB)
-        results = face.process(imgRGB)
-        imgH, imgW, _ = cv_frame.shape
-        if results:
-            for facelm in results.multi_face_landmarks:
-                for id, lm in enumerate(facelm.landmark):
-                    ih, iw, ic = cv_frame.shape
-                    x, y = int(lm.x * iw), int(lm.y * ih)
-                    if id in chosen_left_eye_idxs or id in chosen_right_eye_idxs:
-                        cv2.circle(cv_frame, (x, y), 1, (0, 255, 0), 1)
-                    elif id in mouth_idxs:
-                        cv2.circle(cv_frame, (x, y), 1, (233, 255, 0), 1)
-        cv2.putText(cv_frame, str(int(fps.getFPS())).rjust(3) + str(' FPS'), (0, 50), cv2.FONT_HERSHEY_DUPLEX, 1,
-                    (255, 0, 0),
-                    3)
-        displayImg(cv_frame)
-
-
-
-    def go_to_page3(self):
-        self.controller.show_frame(Page3)
+        # Start OpenCV loop
+        self.start_opencv_loop()
 
     def go_to_page1(self):
-        self.controller.show_frame(Page1)
+        self.controller.show_frame(MainPage)
 
+    def start_opencv_loop(self):
+        # Function to run OpenCV loop
+        fps = cvHelp.TrackFPS(.05)
+        gui = cvHelp.cvGUI(self.cv_frame, 640, 480)  # Pass cv_frame instead of root
+        gui.camStart()
 
-class Page3(ttk.Frame):
-    def __init__(self, parent, controller, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+        def myloop():
+            ignore, frame = gui.cam.read()
+            chosen_left_eye_idxs = [362, 385, 387, 263, 373, 380]
+            chosen_right_eye_idxs = [33, 160, 158, 133, 153, 144]
+            mouth_idxs = [191, 82, 312, 310, 13, 81, 95, 87, 317, 318, 14, 178]
+            face = mp.solutions.face_mesh.FaceMesh()
+            face = get_mediapipe_app()
+            imgRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = face.process(imgRGB)
+            imgH, imgW, _ = frame.shape
+            if results:
+                for facelm in results.multi_face_landmarks:
+                    for id, lm in enumerate(facelm.landmark):
+                        ih, iw, ic = frame.shape
+                        x, y = int(lm.x * iw), int(lm.y * ih)
+                        if id in chosen_left_eye_idxs or id in chosen_right_eye_idxs:
+                            cv2.circle(frame, (x, y), 1, (0, 255, 0), 1)
+                        elif id in mouth_idxs:
+                            cv2.circle(frame , (x, y), 1, (233, 255, 0), 1)
+            cv2.putText(frame, str(int(fps.getFPS())).rjust(3) + str(' FPS'), (0, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 100, 0),
+                        3)
+            gui.displayImg(frame)
+            self.controller.after(10, myloop)
 
-        self.controller = controller
-
-        # Chèn ảnh background cho trang 3
-        image = Image.open("page2.png")  # Đường dẫn đến tệp ảnh của bạn
-        image = image.resize((320, 570), PIL.Image.Resampling.LANCZOS)
-        photo = ImageTk.PhotoImage(image)
-        background_label = ttk.Label(self, image=photo)
-        background_label.image = photo
-        background_label.place(relwidth=1, relheight=1)
-
-        # Load ảnh và lưu trữ chúng trong các thuộc tính của lớp
-        self.image1 = Image.open("menu.png")
-        self.image1 = self.image1.resize((100, 35), PIL.Image.Resampling.LANCZOS)
-        self.photo1 = ImageTk.PhotoImage(self.image1)
-
-        self.image2 = Image.open("instruction.png")
-        self.image2 = self.image2.resize((170, 35), PIL.Image.Resampling.LANCZOS)
-        self.photo2 = ImageTk.PhotoImage(self.image2)
-
-        self.image3 = Image.open("about us.png")
-        self.image3 = self.image3.resize((170, 35), PIL.Image.Resampling.LANCZOS)
-        self.photo3 = ImageTk.PhotoImage(self.image3)
-
-        self.image4 = Image.open("help.png")
-        self.image4 = self.image4.resize((170, 35), PIL.Image.Resampling.LANCZOS)
-        self.photo4 = ImageTk.PhotoImage(self.image4)
-
-        # Sử dụng hình ảnh đã lưu trữ trong các thuộc tính
-        label1 = ttk.Label(self, image=self.photo1)
-        label2 = ttk.Label(self, image=self.photo2)
-        label3 = ttk.Label(self, image=self.photo3)
-        label4 = ttk.Label(self, image=self.photo4)
-
-        # Tạo các nút menu
-
-        self.image111 = Image.open("mui_ten.png")
-        self.image111 = self.image111.resize((25, 25), PIL.Image.Resampling.LANCZOS)
-        self.photo111 = ImageTk.PhotoImage(self.image111)
-
-        button1 = ttk.Button(self, image=self.photo111)
-        button2 = ttk.Button(self, image=self.photo111)
-        button3 = ttk.Button(self, image=self.photo111)
-
-        # Đặt các nút menu vào grid layout
-
-        button1.grid(row=2, column=0, padx=60, pady=(70, 10), sticky="e")
-        button2.grid(row=3, column=0, padx=60, pady=10, sticky="e")
-        button3.grid(row=4, column=0, padx=60, pady=10, sticky="e")
-
-        # Đặt các nút vào grid layout
-        label1.grid(row=1, column=0, padx=120, pady=(70, 10))
-        label2.grid(row=2, column=0, padx=50, pady=(70, 10), sticky="w")
-        label3.grid(row=3, column=0, padx=50, pady=0, sticky="w")
-        label4.grid(row=4, column=0, padx=50, pady=0, sticky="w")
-
-        back_button = ttk.Button(self, text="Back", command=self.go_to_page2)
-        back_button.grid(row=5, column=0, columnspan=2, padx=10, pady=(180, 10))
-
-    def go_to_page2(self):
-        self.controller.show_frame(Page2)
-
+        myloop()
 
 class MainApplication(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -204,17 +105,17 @@ class MainApplication(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (Page1, Page2, Page3):
+        for F in (MainPage, Page2):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame(Page1)
+        self.show_frame(MainPage)
 
     def show_frame(self, cont):
         frame = self.frames[cont]
         frame.tkraise()
 
-
-app = MainApplication()
-app.mainloop()
+if __name__ == "__main__":
+    app = MainApplication()
+    app.mainloop()
