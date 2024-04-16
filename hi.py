@@ -2,9 +2,25 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import PIL
-from GUI import cvhelpers as cvHelp
+import cvhelpers as cvHelp
 import mediapipe as mp
 import cv2
+
+
+def camStart(self):
+    self.cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, self.w)
+    self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, self.h)
+    self.cam.set(cv2.CAP_PROP_FPS, 30)
+
+
+def displayImg(self, frame):
+    frameRGBA = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+    img = Image.fromarray(frameRGBA)
+    imgtk = ImageTk.PhotoImage(image=img)
+    self.camIMG.imgtk = imgtk
+    self.camIMG.configure(image=imgtk)
+
 
 def get_mediapipe_app(
         max_num_faces=1,
@@ -73,10 +89,9 @@ class Page2(ttk.Frame):
 
         back_button = ttk.Button(self, text="Back", command=self.go_to_page1)
         back_button.pack(side="bottom")
-        """
+
         fps = cvHelp.TrackFPS(.05)
-        gui = cvHelp.cvGUI(self.root, 600, 600)
-        gui.camStart()
+        gui = camStart()
 
         ignore, cv_frame = gui.cam.read()
         chosen_left_eye_idxs = [362, 385, 387, 263, 373, 380]
@@ -99,8 +114,10 @@ class Page2(ttk.Frame):
         cv2.putText(cv_frame, str(int(fps.getFPS())).rjust(3) + str(' FPS'), (0, 50), cv2.FONT_HERSHEY_DUPLEX, 1,
                     (255, 0, 0),
                     3)
-        gui.displayImg(cv_frame)
-        """
+        displayImg(cv_frame)
+
+
+
     def go_to_page3(self):
         self.controller.show_frame(Page3)
 

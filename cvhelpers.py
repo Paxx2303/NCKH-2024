@@ -63,10 +63,6 @@ class cvGUI:  # https://tkdocs.com/index.html
         self.cam.release()
         self.root.destroy()
 
-    def IMGxy(self, e):  # update x,y if click in image
-        cvGUI.imgClick = (e.x, e.y)
-        cvColorTracker.newClick = True
-
     def camStart(self):
         self.cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, self.w)
